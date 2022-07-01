@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.dl.mapper.SubjectMapper">
+    <resultMap id="many2one" type="Subject">
+        <id column="sid" property="id"/>
+        <result column="title" property="title"/>
+        <result column="total_votes" property="totalVotes"/>
+        <result column="view_times" property="viewTimes"/>
+        <collection  property="options" ofType="Option" column="sid">
+            <id column="oid" property="id"/>
+            <result column="opt_content" property="optContent"/>
+            <result column="vote" property="vote"/>
+        </collection >
+    </resultMap>
+    <select id="findAll" resultType="Subject">
+        select * from subjects order by create_date desc
+    </select>
+    <select id="findById" parameterType="int" resultMap="many2one">
+        SELECT sid,o.id as oid,opt_content,vote,title,total_votes,view_times FROM `options` AS o INNER JOIN subjects AS s ON o.sid=s.id WHERE s.id=#{id}
+    </select>
+    <update id="updateVote" parameterType="int">
+        update subjects set total_votes=total_votes+1 where id=#{id}
+    </update>
+    <update id="updateView" parameterType="int">
+        update subjects set view_times=view_times+1 where id=#{id}
+    </update>
+    <update id="updateVotes" parameterType="Subject">
+        update subjects set total_votes=#{totalVotes} where id=#{id}
+    </update>
+</mapper>

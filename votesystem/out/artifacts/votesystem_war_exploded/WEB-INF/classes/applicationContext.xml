@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+           http://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.springframework.org/schema/context
+           http://www.springframework.org/schema/context/spring-context.xsd
+            http://www.springframework.org/schema/tx
+            http://www.springframework.org/schema/tx/spring-tx.xsd
+            http://www.springframework.org/schema/aop
+            http://www.springframework.org/schema/aop/spring-aop.xsd">
+    <context:annotation-config/>
+    <!--service扫描-->
+    <context:component-scan base-package="com.dl.service"/>
+    <!--加载db.properties-->
+    <context:property-placeholder location="classpath:db.properties"/>
+
+    <!--数据源-->
+    <bean id="dataSource" class="org.apache.ibatis.datasource.pooled.PooledDataSource">
+        <property name="driver" value="${driver}"/>
+        <property name="url" value="${url}"/>
+        <!--尽量不要使用${username}，这是一个关键词-->
+        <property name="username" value="${user}"/>
+        <property name="password" value="${password}"/>
+    </bean>
+    <!--配置SessionFactory-->
+    <bean id="sessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <!--引用的数据源-->
+        <property name="dataSource" ref="dataSource"/>
+        <!--实体类别名配置-->
+        <property name="typeAliasesPackage" value="com.dl.entity"/>
+        <!--映射文件-->
+        <property name="mapperLocations" value="classpath:com/dl/mapper/*.xml"/>
+        <!--驼峰命名-->
+        <property name="configuration">
+            <bean class="org.apache.ibatis.session.Configuration">
+                <property name="mapUnderscoreToCamelCase" value="true"/>
+            </bean>
+        </property>
+<!--        &lt;!&ndash;分页插件PageHelper配置&ndash;&gt;-->
+<!--        <property name="plugins">-->
+<!--            <list>-->
+<!--                <bean class="com.github.pagehelper.PageInterceptor">-->
+<!--                    <property name="properties">-->
+<!--                        <props>-->
+<!--                            <prop key="helpDialect">mysql</prop>-->
+<!--                            &lt;!&ndash;合理化参数&ndash;&gt;-->
+<!--                            <prop key="reasonable">true</prop>-->
+<!--                            &lt;!&ndash;配置当页面不足分页时，不分页&ndash;&gt;-->
+<!--                            <prop key="pageSizeZero">true</prop>-->
+<!--                        </props>-->
+<!--                    </property>-->
+<!--                </bean>-->
+<!--            </list>-->
+<!--        </property>-->
+
+    </bean>
+    <!--配置Mapper-->
+    <!--当通过配置文件配置数据源时，需要使用sqlsessionbeanName-->
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="sqlSessionFactoryBeanName" value="sessionFactory"/>
+        <property name="basePackage" value="com.dl.mapper"/>
+    </bean>
+    <!--声明式事务配置-->
+    <bean id="txManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+    <tx:advice id="txAdvice" transaction-manager="txManager">
+        <tx:attributes>
+            <tx:method name="update*" propagation="REQUIRED" rollback-for="RuntimeException"/>
+        </tx:attributes>
+    </tx:advice>
+    <aop:config>
+        <aop:pointcut id="pc" expression="execution(* com.dl.service.*.*(..))"/>
+        <aop:advisor advice-ref="txAdvice" pointcut-ref="pc"/>
+    </aop:config>
+</beans>
